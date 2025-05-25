@@ -1,25 +1,12 @@
 'use client';
 
-import { Suspense } from "react";
-import ScenarioContent from "@/components/ScenarioContent";
-import { scenarios } from "@/config/scenarios";
-
-function TemusAvatarCustomerPage() {
-  const scenario = scenarios.find(s => s.id === 'temus-avatar-customer')!;
-  
+export default function TemusAvatarCustomerPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <ScenarioContent
-        title={scenario.title}
-        description={scenario.description}
-        startMessage={scenario.startMessage}
-        prompt={scenario.prompt}
-        avatar={scenario.avatar}
-        backgroundImageUrl={scenario.backgroundImageUrl}
-        voice={scenario.voice}
-      />
-    </Suspense>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">Avatar Customer Page</h1>
+        <p className="text-gray-600">This page is currently under construction.</p>
+      </div>
+    </div>
   );
 }
-
-export default TemusAvatarCustomerPage

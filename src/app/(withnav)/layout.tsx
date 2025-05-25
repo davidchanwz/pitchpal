@@ -1,33 +1,30 @@
+import "../globals.css";
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
+import { Inter } from "next/font/google";
 
-import 'primereact/resources/themes/viva-light/theme.css';
-import 'primeflex/primeflex.css';
-import 'primeicons/primeicons.css';
-
-const inter = Poppins({
+const inter = Inter({
   subsets: ["latin"],
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {
-  title: "Temus Avatar",
-  description: "Temus Avatar",
+  title: "PitchPal - AI Avatar Presentations",
+  description: "Create stunning AI avatar presentations from your PowerPoint files",
   icons: {
     icon: '/temus-logo.svg',
     shortcut: '/temus-logo.svg',
   },
 };
 
-export default function RootLayout({
+export default function Layout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
     <html lang="en">
-      <body className={inter.className} style={{ margin: 0, padding: 0 }}>
-        <main className="h-screen w-full flex flex-column">
+      <body className={`${inter.className} min-h-screen bg-background antialiased`}>
+        <main className="min-h-screen">
           {children}
         </main>
       </body>
