@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@epicgames-ps/lib-pixelstreamingfrontend-ue5.3": "^1.0.6",
+    "@supabase/supabase-js": "^2.49.8",
     "@types/js-cookie": "^3.0.6",
     "axios": "^1.6.2",
     "class-variance-authority": "^0.7.0",
@@ -35,7 +36,8 @@
     "sharp": "^0.33.5",
     "tailwind-merge": "^2.1.0",
     "tailwindcss-animate": "^1.0.7",
-    "usehooks-ts": "^2.14.0"
+    "usehooks-ts": "^2.14.0",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/node": "^20",

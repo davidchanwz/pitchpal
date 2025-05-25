@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { meta } from './meta';
+import UploadPptx from '@/components/UploadPptx';
 
 function CatalogPage() {
   return (
@@ -9,6 +10,9 @@ function CatalogPage() {
       <div style={{ maxWidth: 1200 }} className="w-full">
         <div className="flex justify-content-between align-items-center mb-8">
           <h1 className="text-3xl font-semibold text-gray-800 m-0">Temus</h1>
+        </div>
+        <div className="mb-8">
+          <UploadPptx />
         </div>
         <div className="w-full">
           <div className="grid gap-4">
