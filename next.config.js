@@ -6,9 +6,9 @@ const nextConfig = {
       test: /\.pdf$/,
       use: [
         {
-          loader: 'file-loader',
+          loader: "file-loader",
           options: {
-            name: '[name].[ext]',
+            name: "[name].[ext]",
           },
         },
       ],
@@ -16,8 +16,21 @@ const nextConfig = {
     return config;
   },
   images: {
-    domains: ['png.pngtree.com'],
+    domains: ["png.pngtree.com"],
   },
-}
+  async headers() {
+    return [
+      {
+        source: "/slides/:path*",
+        headers: [
+          {
+            key: "Access-Control-Allow-Origin",
+            value: "*",
+          },
+        ],
+      },
+    ];
+  },
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;
