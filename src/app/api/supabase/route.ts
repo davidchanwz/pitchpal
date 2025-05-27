@@ -1,54 +1,68 @@
-import { NextRequest, NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/server/supabase-server";
-import { v4 as uuidv4 } from 'uuid';
-
-export async function GET(request: Request) {
-  return NextResponse.json({ message: 'Hello from Next.js API!' });
-}
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
-  // Parse multipart form data
-  const formData = await request.formData();
-  const file = formData.get('file') as File | null;
+  try {
+    // Parse multipart form data
+    const formData = await request.formData();
+    const file = formData.get('file') as File | null;
+    const userId = formData.get('user_id') as string | null;
 
-  if (!file) {
-    return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
-  }
+    if (!file) {
+      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+    }
 
-  // Generate a UUID for the file and use as filename
-  const uuid = uuidv4();
-  const filename = uuid + '.pptx';
+    if (!userId) {
+      return NextResponse.json({ error: 'No user ID provided' }, { status: 400 });
+    }
 
-  // Optionally, get user_id from session or request (placeholder below)
-  const user_id = formData.get('user_id') || null; // Replace with real user ID logic
+    // Initialize Supabase client
+    const supabase = createRouteHandlerClient({ cookies });
 
-  // Upload file to Supabase Storage
-  const { data: uploadData, error: uploadError } = await supabaseServer.storage
-    .from('slides')
-    .upload(filename, file, {
-      contentType: file.type,
-      upsert: true,
+    // Generate unique filename
+    const filename = `${userId}_${Date.now()}_${file.name}`;
+
+    // Upload file to Supabase Storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('slides')
+      .upload(filename, file, {
+        contentType: file.type,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      console.error('Storage upload error:', uploadError);
+      return NextResponse.json({ error: uploadError.message }, { status: 500 });
+    }
+
+    // Create record in slides table
+    const { error: dbError } = await supabase
+      .from('slides')
+      .insert([
+        {
+          user_id: userId,
+          file_name: file.name,
+          storage_path: uploadData.path,
+          upload_date: new Date().toISOString(),
+        },
+      ]);
+
+    if (dbError) {
+      console.error('Database insert error:', dbError);
+      return NextResponse.json({ error: dbError.message }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      message: 'Upload successful',
+      path: uploadData.path,
     });
-
-  if (uploadError) {
-    return NextResponse.json({ error: uploadError.message }, { status: 500 });
+    
+  } catch (error) {
+    console.error('Server error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
-
-  // Insert record into slides table
-  const { error: dbError } = await supabaseServer
-    .from('slides')
-    .insert([
-      {
-        id: uuid,
-        user_id: user_id,
-        file_name: file.name,
-        bucket_location: uploadData.path,
-      },
-    ]);
-
-  if (dbError) {
-    return NextResponse.json({ error: dbError.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ id: uuid, path: uploadData.path });
 }

@@ -4,6 +4,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useRouter } from 'next/navigation';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { 
   User, 
   Settings, 
@@ -25,10 +27,21 @@ export default function FloatingNavbar({
   onProfileClick,
   onSettingsClick,
   onHelpClick,
-  onLogoutClick,
+  onLogoutClick: propLogoutClick,
   userName = "Demo User",
   isProcessing = false
 }: FloatingNavbarProps) {
+  const router = useRouter();
+  const supabase = createClientComponentClient();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push('/auth');
+    router.refresh();
+  };
+
+  // Use provided logout handler or default to supabase signout
+  const onLogoutClick = propLogoutClick || handleSignOut;
   return (
     <motion.nav
       initial={{ y: -100, opacity: 0 }}

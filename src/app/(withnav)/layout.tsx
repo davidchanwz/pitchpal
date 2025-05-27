@@ -1,6 +1,10 @@
 import "../globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import FloatingNavbar from "@/components/FloatingNavbar";
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -16,14 +20,20 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Layout({
+export default async function Layout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
+  const supabase = createServerComponentClient({ cookies });
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session) {
+    redirect('/auth');
+  }  return (
     <html lang="en">
       <body className={`${inter.className} min-h-screen bg-background antialiased`}>
+        <FloatingNavbar userName={session?.user?.email || "Guest"} />
         <main className="min-h-screen">
           {children}
         </main>
