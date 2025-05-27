@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,58 +13,63 @@ import AvatarSelection from "@/components/AvatarSelection";
 import SlideExtractor from "@/components/SlideExtractor";
 import ScriptGenerator from "@/components/ScriptGenerator";
 import PresentationAnalytics from "@/components/PresentationAnalytics";
-import { 
-  Presentation, 
-  Sparkles, 
-  Clock, 
-  Users, 
+import {
+  Presentation,
+  Sparkles,
+  Clock,
+  Users,
   TrendingUp,
   FileText,
-  Wand2
+  Wand2,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 // Mock data - replace with actual API calls
 const mockAvatars = [
   {
     id: "henry",
     name: "Henry",
-    description: "Professional business presenter with a confident tone. Perfect for corporate presentations and executive briefings.",
+    description:
+      "Professional business presenter with a confident tone. Perfect for corporate presentations and executive briefings.",
     imageUrl: "/avatars/henry.png",
     voicePreview: "sample-voice-1.mp3",
     gender: "male" as const,
     accent: "American",
-    specialty: "Business & Corporate"
+    specialty: "Business & Corporate",
   },
   {
     id: "jessie",
     name: "Jessie",
-    description: "Friendly and approachable presenter ideal for educational content and training sessions.",
+    description:
+      "Friendly and approachable presenter ideal for educational content and training sessions.",
     imageUrl: "/avatars/jessie.png",
     voicePreview: "sample-voice-2.mp3",
     gender: "female" as const,
     accent: "British",
-    specialty: "Education & Training"
+    specialty: "Education & Training",
   },
   {
     id: "kenji",
     name: "Kenji",
-    description: "Tech-savvy presenter perfect for technical demonstrations and product launches.",
+    description:
+      "Tech-savvy presenter perfect for technical demonstrations and product launches.",
     imageUrl: "/avatars/kenji.png",
     voicePreview: "sample-voice-3.mp3",
     gender: "male" as const,
     accent: "American",
-    specialty: "Technology & Innovation"
+    specialty: "Technology & Innovation",
   },
   {
     id: "martha",
     name: "Martha",
-    description: "Experienced and authoritative presenter for academic and research presentations.",
+    description:
+      "Experienced and authoritative presenter for academic and research presentations.",
     imageUrl: "/avatars/martha.png",
     voicePreview: "sample-voice-4.mp3",
     gender: "female" as const,
     accent: "American",
-    specialty: "Academic & Research"
-  }
+    specialty: "Academic & Research",
+  },
 ];
 
 const mockScript = `Welcome to today's presentation! 
@@ -80,6 +85,7 @@ Finally, we'll discuss our implementation strategy and the expected outcomes. We
 Let's begin with our market analysis...`;
 
 function Dashboard() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("upload");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [extractedSlides, setExtractedSlides] = useState<any[]>([]);
@@ -91,8 +97,18 @@ function Dashboard() {
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>("");
   const [recentPresentations] = useState([
     { id: 1, title: "Q4 Sales Review", date: "2 hours ago", duration: "8 min" },
-    { id: 2, title: "Product Launch Strategy", date: "Yesterday", duration: "12 min" },
-    { id: 3, title: "Team Training Session", date: "3 days ago", duration: "15 min" },
+    {
+      id: 2,
+      title: "Product Launch Strategy",
+      date: "Yesterday",
+      duration: "12 min",
+    },
+    {
+      id: 3,
+      title: "Team Training Session",
+      date: "3 days ago",
+      duration: "15 min",
+    },
   ]);
 
   // Simulate file processing
@@ -104,7 +120,7 @@ function Dashboard() {
 
     // Simulate processing with progress
     const progressInterval = setInterval(() => {
-      setUploadProgress(prev => {
+      setUploadProgress((prev) => {
         if (prev >= 100) {
           clearInterval(progressInterval);
           setIsProcessingFile(false);
@@ -131,7 +147,7 @@ function Dashboard() {
   // Simulate script generation
   const generateScript = async () => {
     setIsGeneratingScript(true);
-    
+
     // Simulate API call delay
     setTimeout(() => {
       setGeneratedScript(mockScript);
@@ -148,9 +164,9 @@ function Dashboard() {
       setActiveTab("avatar");
       return;
     }
-    
-    // Simulate starting presentation
-    alert(`Starting presentation with ${mockAvatars.find(a => a.id === selectedAvatarId)?.name}!`);
+
+    // Navigate to presentation page with selected avatar
+    router.push(`/presentation?avatar=${selectedAvatarId}`);
   };
 
   const handleAvatarSelect = (avatarId: string) => {
@@ -159,7 +175,6 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-
       {/* nav bar */}
       {/* <FloatingNavbar 
         userName="Demo User"
@@ -167,7 +182,7 @@ function Dashboard() {
       /> */}
 
       {/* Hero Section */}
-      <motion.div 
+      <motion.div
         className="pt-24 pb-8 px-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -185,27 +200,33 @@ function Dashboard() {
               <span>AI-Powered Presentations</span>
             </div>
             <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent mb-4">
-              Transform Your PowerPoint into 
-              <br />AI Avatar Presentations
+              Transform Your PowerPoint into
+              <br />
+              AI Avatar Presentations
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Upload your PPTX files and watch as AI creates engaging presentations with realistic avatars. 
-              Perfect for training, demos, and professional presentations.
+              Upload your PPTX files and watch as AI creates engaging
+              presentations with realistic avatars. Perfect for training, demos,
+              and professional presentations.
             </p>
           </motion.div>
 
           {/* Stats */}
-          <motion.div 
+          <motion.div
             className="grid grid-cols-1 md:grid-cols-4 gap-4 max-w-4xl mx-auto mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             {[
-              { icon: Presentation, label: "Presentations Created", value: "2,847" },
+              {
+                icon: Presentation,
+                label: "Presentations Created",
+                value: "2,847",
+              },
               { icon: Clock, label: "Hours Saved", value: "1,234" },
               { icon: Users, label: "Active Users", value: "892" },
-              { icon: TrendingUp, label: "Success Rate", value: "98.5%" }
+              { icon: TrendingUp, label: "Success Rate", value: "98.5%" },
             ].map((stat, index) => (
               <motion.div
                 key={index}
@@ -214,7 +235,9 @@ function Dashboard() {
                 transition={{ duration: 0.2 }}
               >
                 <stat.icon className="h-6 w-6 text-blue-600 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {stat.value}
+                </div>
                 <div className="text-sm text-gray-600">{stat.label}</div>
               </motion.div>
             ))}
@@ -224,7 +247,11 @@ function Dashboard() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 pb-12">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="space-y-6"
+        >
           {/* Tab Navigation */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -232,19 +259,31 @@ function Dashboard() {
             transition={{ duration: 0.4, delay: 0.3 }}
           >
             <TabsList className="grid w-full grid-cols-4 lg:w-[800px] mx-auto">
-              <TabsTrigger value="upload" className="flex items-center space-x-2">
+              <TabsTrigger
+                value="upload"
+                className="flex items-center space-x-2"
+              >
                 <FileText className="h-4 w-4" />
                 <span>1. Upload</span>
               </TabsTrigger>
-              <TabsTrigger value="script" className="flex items-center space-x-2">
+              <TabsTrigger
+                value="script"
+                className="flex items-center space-x-2"
+              >
                 <Wand2 className="h-4 w-4" />
                 <span>2. Script</span>
               </TabsTrigger>
-              <TabsTrigger value="avatar" className="flex items-center space-x-2">
+              <TabsTrigger
+                value="avatar"
+                className="flex items-center space-x-2"
+              >
                 <Users className="h-4 w-4" />
                 <span>3. Avatar</span>
               </TabsTrigger>
-              <TabsTrigger value="analytics" className="flex items-center space-x-2">
+              <TabsTrigger
+                value="analytics"
+                className="flex items-center space-x-2"
+              >
                 <TrendingUp className="h-4 w-4" />
                 <span>4. Analytics</span>
               </TabsTrigger>
@@ -264,7 +303,7 @@ function Dashboard() {
                     uploadedFile={uploadedFile}
                     error={uploadError}
                   />
-                  
+
                   {uploadedFile && (
                     <SlideExtractor
                       file={uploadedFile}
@@ -277,7 +316,7 @@ function Dashboard() {
                     />
                   )}
                 </div>
-                
+
                 {/* Recent Presentations Sidebar */}
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
@@ -286,7 +325,9 @@ function Dashboard() {
                 >
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">Recent Presentations</CardTitle>
+                      <CardTitle className="text-lg">
+                        Recent Presentations
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {recentPresentations.map((presentation) => (
@@ -296,10 +337,16 @@ function Dashboard() {
                           whileHover={{ scale: 1.02 }}
                         >
                           <div>
-                            <p className="font-medium text-sm">{presentation.title}</p>
-                            <p className="text-xs text-gray-600">{presentation.date}</p>
+                            <p className="font-medium text-sm">
+                              {presentation.title}
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              {presentation.date}
+                            </p>
                           </div>
-                          <Badge variant="secondary">{presentation.duration}</Badge>
+                          <Badge variant="secondary">
+                            {presentation.duration}
+                          </Badge>
                         </motion.div>
                       ))}
                     </CardContent>
@@ -321,7 +368,7 @@ function Dashboard() {
                     }}
                   />
                 </div>
-                
+
                 <div className="space-y-6">
                   <ScriptPreview
                     script={generatedScript}
@@ -329,11 +376,19 @@ function Dashboard() {
                     onStartPresentation={handleStartPresentation}
                     isGenerating={isGeneratingScript}
                     slideCount={extractedSlides.length || 0}
-                    estimatedDuration={`${Math.ceil((generatedScript.split(' ').length || 0) / 150)} min${Math.ceil((generatedScript.split(' ').length || 0) / 150) !== 1 ? 's' : ''}`}
+                    estimatedDuration={`${Math.ceil(
+                      (generatedScript.split(" ").length || 0) / 150
+                    )} min${
+                      Math.ceil(
+                        (generatedScript.split(" ").length || 0) / 150
+                      ) !== 1
+                        ? "s"
+                        : ""
+                    }`}
                   />
                 </div>
               </div>
-                
+
               {/* Script Tips */}
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
@@ -348,7 +403,10 @@ function Dashboard() {
                     <div className="space-y-3 text-sm">
                       <div className="flex items-start space-x-2">
                         <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0" />
-                        <p>Keep sentences clear and concise for better avatar pronunciation</p>
+                        <p>
+                          Keep sentences clear and concise for better avatar
+                          pronunciation
+                        </p>
                       </div>
                       <div className="flex items-start space-x-2">
                         <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0" />
@@ -356,11 +414,15 @@ function Dashboard() {
                       </div>
                       <div className="flex items-start space-x-2">
                         <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0" />
-                        <p>Use conversational language to engage your audience</p>
+                        <p>
+                          Use conversational language to engage your audience
+                        </p>
                       </div>
                       <div className="flex items-start space-x-2">
                         <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0" />
-                        <p>Include transitions between slides for smooth flow</p>
+                        <p>
+                          Include transitions between slides for smooth flow
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -377,7 +439,7 @@ function Dashboard() {
                     onAvatarSelect={handleAvatarSelect}
                   />
                 </div>
-                
+
                 {/* Presentation Preview */}
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
@@ -386,15 +448,22 @@ function Dashboard() {
                 >
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">Presentation Preview</CardTitle>
+                      <CardTitle className="text-lg">
+                        Presentation Preview
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {selectedAvatarId && (
                         <div className="text-center space-y-4">
                           <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center overflow-hidden">
-                            {mockAvatars.find(a => a.id === selectedAvatarId)?.imageUrl ? (
-                              <img 
-                                src={mockAvatars.find(a => a.id === selectedAvatarId)?.imageUrl} 
+                            {mockAvatars.find((a) => a.id === selectedAvatarId)
+                              ?.imageUrl ? (
+                              <img
+                                src={
+                                  mockAvatars.find(
+                                    (a) => a.id === selectedAvatarId
+                                  )?.imageUrl
+                                }
                                 alt="Selected Avatar"
                                 className="w-full h-full object-cover"
                               />
@@ -404,13 +473,21 @@ function Dashboard() {
                           </div>
                           <div>
                             <p className="font-medium">
-                              {mockAvatars.find(a => a.id === selectedAvatarId)?.name}
+                              {
+                                mockAvatars.find(
+                                  (a) => a.id === selectedAvatarId
+                                )?.name
+                              }
                             </p>
                             <p className="text-sm text-gray-600">
-                              {mockAvatars.find(a => a.id === selectedAvatarId)?.specialty}
+                              {
+                                mockAvatars.find(
+                                  (a) => a.id === selectedAvatarId
+                                )?.specialty
+                              }
                             </p>
                           </div>
-                          <Button 
+                          <Button
                             onClick={handleStartPresentation}
                             className="w-full"
                             size="lg"
@@ -419,7 +496,7 @@ function Dashboard() {
                           </Button>
                         </div>
                       )}
-                      
+
                       {!selectedAvatarId && (
                         <div className="text-center py-8 text-gray-500">
                           <Users className="h-12 w-12 mx-auto mb-2 text-gray-300" />
