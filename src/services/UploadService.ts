@@ -136,6 +136,53 @@ export class UploadService {
     }
   }
 
+  static async getSlideById(slideId: string) {
+    try {
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        return {
+          success: false,
+          error: "User not authenticated",
+        };
+      }
+
+      const { data: slide, error: slideError } = await supabase
+        .from("slides")
+        .select("*")
+        .eq("id", slideId)
+        .eq("user_id", user.id) // Ensure user can only access their own slides
+        .single();
+
+      if (slideError) {
+        return {
+          success: false,
+          error: slideError.message,
+        };
+      }
+
+      // Get the signed URL for the slide
+      const slideUrl = await this.getSlideUrl(slide.bucket_location);
+      console.log("Slide URL generated:", slideUrl);
+      return {
+        success: true,
+        data: {
+          ...slide,
+          slideUrl: slideUrl,
+        },
+      };
+    } catch (error) {
+      console.error("Get slide by ID error:", error);
+      return {
+        success: false,
+        error: "Failed to fetch slide",
+      };
+    }
+  }
+
   static async deleteSlide(slideId: string, storagePath: string) {
     try {
       const {
@@ -187,10 +234,15 @@ export class UploadService {
   }
 
   static async saveScript(slideId: string, script: string) {
-    console.log('📝 [UploadService.saveScript] Starting script save operation...');
-    console.log('📝 [UploadService.saveScript] slideId:', slideId);
-    console.log('📝 [UploadService.saveScript] script length:', script.length);
-    console.log('📝 [UploadService.saveScript] script preview:', script.substring(0, 100) + '...');
+    console.log(
+      "📝 [UploadService.saveScript] Starting script save operation..."
+    );
+    console.log("📝 [UploadService.saveScript] slideId:", slideId);
+    console.log("📝 [UploadService.saveScript] script length:", script.length);
+    console.log(
+      "📝 [UploadService.saveScript] script preview:",
+      script.substring(0, 100) + "..."
+    );
 
     try {
       const {
@@ -198,9 +250,9 @@ export class UploadService {
         error: authError,
       } = await supabase.auth.getUser();
 
-      console.log('🔐 [UploadService.saveScript] Auth check completed');
+      console.log("🔐 [UploadService.saveScript] Auth check completed");
       if (authError) {
-        console.error('❌ [UploadService.saveScript] Auth error:', authError);
+        console.error("❌ [UploadService.saveScript] Auth error:", authError);
         return {
           success: false,
           error: "User not authenticated",
@@ -208,14 +260,14 @@ export class UploadService {
       }
 
       if (!user) {
-        console.error('❌ [UploadService.saveScript] No user found');
+        console.error("❌ [UploadService.saveScript] No user found");
         return {
           success: false,
           error: "User not authenticated",
         };
       }
 
-      console.log('✅ [UploadService.saveScript] User authenticated:', user.id);
+      console.log("✅ [UploadService.saveScript] User authenticated:", user.id);
 
       const { data: updateResult, error: updateError } = await supabase
         .from("slides")
@@ -225,16 +277,24 @@ export class UploadService {
         .select(); // Add select to return the updated row
 
       if (updateError) {
-        console.error("❌ [UploadService.saveScript] Database update error:", updateError);
-        console.error("❌ [UploadService.saveScript] Error details:", JSON.stringify(updateError, null, 2));
+        console.error(
+          "❌ [UploadService.saveScript] Database update error:",
+          updateError
+        );
+        console.error(
+          "❌ [UploadService.saveScript] Error details:",
+          JSON.stringify(updateError, null, 2)
+        );
         return {
           success: false,
           error: updateError.message,
         };
       }
 
-      console.log('🔍 [UploadService.saveScript] Update result from database:',
-        JSON.stringify(updateResult, null, 2));
+      console.log(
+        "🔍 [UploadService.saveScript] Update result from database:",
+        JSON.stringify(updateResult, null, 2)
+      );
 
       // Verify the data was actually saved by querying it back
       const { data: verifyData, error: verifyError } = await supabase
@@ -245,13 +305,20 @@ export class UploadService {
         .single();
 
       if (verifyError) {
-        console.warn("⚠️ [UploadService.saveScript] Verification query failed:", verifyError);
+        console.warn(
+          "⚠️ [UploadService.saveScript] Verification query failed:",
+          verifyError
+        );
       } else {
-        console.log('🔍 [UploadService.saveScript] Verification query result:',
-          JSON.stringify(verifyData, null, 2));
+        console.log(
+          "🔍 [UploadService.saveScript] Verification query result:",
+          JSON.stringify(verifyData, null, 2)
+        );
       }
 
-      console.log('✅ [UploadService.saveScript] Script saved successfully to database');
+      console.log(
+        "✅ [UploadService.saveScript] Script saved successfully to database"
+      );
       return {
         success: true,
       };
@@ -264,7 +331,9 @@ export class UploadService {
     }
   }
 
-  static async getScript(slideId: string): Promise<{ success: boolean; script?: string; error?: string }> {
+  static async getScriptBySlideId(
+    slideId: string
+  ): Promise<{ success: boolean; script?: string; error?: string }> {
     try {
       const {
         data: { user },
@@ -306,12 +375,25 @@ export class UploadService {
     }
   }
 
-  static async updateSlideWithExtractedContent(slideId: string, extractedSlides: any[]) {
-    console.log('📊 [UploadService.updateSlideWithExtractedContent] Starting extracted content save...');
-    console.log('📊 [UploadService.updateSlideWithExtractedContent] slideId:', slideId);
-    console.log('📊 [UploadService.updateSlideWithExtractedContent] extractedSlides count:', extractedSlides.length);
-    console.log('📊 [UploadService.updateSlideWithExtractedContent] extractedSlides preview:',
-      JSON.stringify(extractedSlides.slice(0, 2), null, 2)); // Show first 2 slides
+  static async updateSlideWithExtractedContent(
+    slideId: string,
+    extractedSlides: any[]
+  ) {
+    console.log(
+      "📊 [UploadService.updateSlideWithExtractedContent] Starting extracted content save..."
+    );
+    console.log(
+      "📊 [UploadService.updateSlideWithExtractedContent] slideId:",
+      slideId
+    );
+    console.log(
+      "📊 [UploadService.updateSlideWithExtractedContent] extractedSlides count:",
+      extractedSlides.length
+    );
+    console.log(
+      "📊 [UploadService.updateSlideWithExtractedContent] extractedSlides preview:",
+      JSON.stringify(extractedSlides.slice(0, 2), null, 2)
+    ); // Show first 2 slides
 
     try {
       const {
@@ -319,9 +401,14 @@ export class UploadService {
         error: authError,
       } = await supabase.auth.getUser();
 
-      console.log('🔐 [UploadService.updateSlideWithExtractedContent] Auth check completed');
+      console.log(
+        "🔐 [UploadService.updateSlideWithExtractedContent] Auth check completed"
+      );
       if (authError) {
-        console.error('❌ [UploadService.updateSlideWithExtractedContent] Auth error:', authError);
+        console.error(
+          "❌ [UploadService.updateSlideWithExtractedContent] Auth error:",
+          authError
+        );
         return {
           success: false,
           error: "User not authenticated",
@@ -329,14 +416,19 @@ export class UploadService {
       }
 
       if (!user) {
-        console.error('❌ [UploadService.updateSlideWithExtractedContent] No user found');
+        console.error(
+          "❌ [UploadService.updateSlideWithExtractedContent] No user found"
+        );
         return {
           success: false,
           error: "User not authenticated",
         };
       }
 
-      console.log('✅ [UploadService.updateSlideWithExtractedContent] User authenticated:', user.id);
+      console.log(
+        "✅ [UploadService.updateSlideWithExtractedContent] User authenticated:",
+        user.id
+      );
 
       // Store the extracted slides data as JSON
       const updateData = {
@@ -344,8 +436,10 @@ export class UploadService {
         updated_at: new Date().toISOString(),
       };
 
-      console.log('🔍 [UploadService.updateSlideWithExtractedContent] Update data being sent:',
-        JSON.stringify(updateData, null, 2));
+      console.log(
+        "🔍 [UploadService.updateSlideWithExtractedContent] Update data being sent:",
+        JSON.stringify(updateData, null, 2)
+      );
 
       const { data: updateResult, error: updateError } = await supabase
         .from("slides")
@@ -355,16 +449,24 @@ export class UploadService {
         .select(); // Add select to return the updated row
 
       if (updateError) {
-        console.error("❌ [UploadService.updateSlideWithExtractedContent] Database update error:", updateError);
-        console.error("❌ [UploadService.updateSlideWithExtractedContent] Error details:", JSON.stringify(updateError, null, 2));
+        console.error(
+          "❌ [UploadService.updateSlideWithExtractedContent] Database update error:",
+          updateError
+        );
+        console.error(
+          "❌ [UploadService.updateSlideWithExtractedContent] Error details:",
+          JSON.stringify(updateError, null, 2)
+        );
         return {
           success: false,
           error: updateError.message,
         };
       }
 
-      console.log('🔍 [UploadService.updateSlideWithExtractedContent] Update result from database:',
-        JSON.stringify(updateResult, null, 2));
+      console.log(
+        "🔍 [UploadService.updateSlideWithExtractedContent] Update result from database:",
+        JSON.stringify(updateResult, null, 2)
+      );
 
       // Verify the data was actually saved by querying it back
       const { data: verifyData, error: verifyError } = await supabase
@@ -375,18 +477,28 @@ export class UploadService {
         .single();
 
       if (verifyError) {
-        console.warn("⚠️ [UploadService.updateSlideWithExtractedContent] Verification query failed:", verifyError);
+        console.warn(
+          "⚠️ [UploadService.updateSlideWithExtractedContent] Verification query failed:",
+          verifyError
+        );
       } else {
-        console.log('🔍 [UploadService.updateSlideWithExtractedContent] Verification query result:',
-          JSON.stringify(verifyData, null, 2));
+        console.log(
+          "🔍 [UploadService.updateSlideWithExtractedContent] Verification query result:",
+          JSON.stringify(verifyData, null, 2)
+        );
       }
 
-      console.log('✅ [UploadService.updateSlideWithExtractedContent] Extracted content saved successfully to database');
+      console.log(
+        "✅ [UploadService.updateSlideWithExtractedContent] Extracted content saved successfully to database"
+      );
       return {
         success: true,
       };
     } catch (error) {
-      console.error("❌ [UploadService.updateSlideWithExtractedContent] Unexpected error:", error);
+      console.error(
+        "❌ [UploadService.updateSlideWithExtractedContent] Unexpected error:",
+        error
+      );
       return {
         success: false,
         error: "Failed to update slide content",
@@ -395,7 +507,9 @@ export class UploadService {
   }
 
   static async verifyDatabaseSchema() {
-    console.log('🔍 [UploadService.verifyDatabaseSchema] Checking database schema...');
+    console.log(
+      "🔍 [UploadService.verifyDatabaseSchema] Checking database schema..."
+    );
 
     try {
       const {
@@ -404,37 +518,54 @@ export class UploadService {
       } = await supabase.auth.getUser();
 
       if (authError || !user) {
-        console.error('❌ [UploadService.verifyDatabaseSchema] User not authenticated');
+        console.error(
+          "❌ [UploadService.verifyDatabaseSchema] User not authenticated"
+        );
         return { success: false, error: "User not authenticated" };
       }
 
       // Try to select all columns from a sample slide
       const { data: sampleData, error: selectError } = await supabase
-        .from('slides')
-        .select('*')
-        .eq('user_id', user.id)
+        .from("slides")
+        .select("*")
+        .eq("user_id", user.id)
         .limit(1);
 
       if (selectError) {
-        console.error('❌ [UploadService.verifyDatabaseSchema] Error querying slides table:', selectError);
-        if (selectError.message.includes('column') && selectError.message.includes('does not exist')) {
-          console.log('💡 [UploadService.verifyDatabaseSchema] Migration may not have been applied yet');
+        console.error(
+          "❌ [UploadService.verifyDatabaseSchema] Error querying slides table:",
+          selectError
+        );
+        if (
+          selectError.message.includes("column") &&
+          selectError.message.includes("does not exist")
+        ) {
+          console.log(
+            "💡 [UploadService.verifyDatabaseSchema] Migration may not have been applied yet"
+          );
         }
         return { success: false, error: selectError.message };
       }
 
       if (sampleData && sampleData.length > 0) {
         const columns = Object.keys(sampleData[0]);
-        console.log('📊 [UploadService.verifyDatabaseSchema] Available columns:', columns);
+        console.log(
+          "📊 [UploadService.verifyDatabaseSchema] Available columns:",
+          columns
+        );
 
-        const hasScript = columns.includes('script');
-        const hasExtractedContent = columns.includes('extracted_content');
-        const hasUpdatedAt = columns.includes('updated_at');
+        const hasScript = columns.includes("script");
+        const hasExtractedContent = columns.includes("extracted_content");
+        const hasUpdatedAt = columns.includes("updated_at");
 
-        console.log('🔍 [UploadService.verifyDatabaseSchema] Required columns check:');
-        console.log(`   script: ${hasScript ? '✅' : '❌'}`);
-        console.log(`   extracted_content: ${hasExtractedContent ? '✅' : '❌'}`);
-        console.log(`   updated_at: ${hasUpdatedAt ? '✅' : '❌'}`);
+        console.log(
+          "🔍 [UploadService.verifyDatabaseSchema] Required columns check:"
+        );
+        console.log(`   script: ${hasScript ? "✅" : "❌"}`);
+        console.log(
+          `   extracted_content: ${hasExtractedContent ? "✅" : "❌"}`
+        );
+        console.log(`   updated_at: ${hasUpdatedAt ? "✅" : "❌"}`);
 
         return {
           success: true,
@@ -443,17 +574,24 @@ export class UploadService {
             hasScript,
             hasExtractedContent,
             hasUpdatedAt,
-            allColumnsPresent: hasScript && hasExtractedContent && hasUpdatedAt
-          }
+            allColumnsPresent: hasScript && hasExtractedContent && hasUpdatedAt,
+          },
         };
       } else {
-        console.log('ℹ️ [UploadService.verifyDatabaseSchema] No slides found for user');
-        return { success: true, data: { columns: [], message: 'No slides found' } };
+        console.log(
+          "ℹ️ [UploadService.verifyDatabaseSchema] No slides found for user"
+        );
+        return {
+          success: true,
+          data: { columns: [], message: "No slides found" },
+        };
       }
-
     } catch (error) {
-      console.error('❌ [UploadService.verifyDatabaseSchema] Unexpected error:', error);
-      return { success: false, error: 'Unexpected error occurred' };
+      console.error(
+        "❌ [UploadService.verifyDatabaseSchema] Unexpected error:",
+        error
+      );
+      return { success: false, error: "Unexpected error occurred" };
     }
   }
 }
