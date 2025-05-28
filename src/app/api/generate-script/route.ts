@@ -54,12 +54,17 @@ Guidelines:
 - Length: ${length} (concise, detailed, or comprehensive)
 - Target Audience: ${targetAudience} (general, technical, executive, or sales)
 - Create smooth transitions between slides
-- Include natural pauses and emphasis points
-- Make it sound conversational, not robotic
+- Make it sound conversational and natural when spoken aloud
 - Include engaging opening and closing statements
-- Add presenter notes for emphasis, timing, and delivery
 
-Format the script with clear slide markers <CLICK> and natural speaking flow.`;
+CRITICAL FORMATTING RULES:
+- Use ONLY <CLICK> markers to indicate slide transitions
+- Do NOT use any other markers, tags, or formatting symbols
+- Do NOT include stage directions, presenter notes, or emphasis markers
+- Do NOT use brackets, parentheses, or other special characters for instructions
+- Write the script as pure spoken text with <CLICK> markers only
+- Start with the opening for slide 1, then <CLICK> before each subsequent slide's content
+- The script will be split by <CLICK> markers and fed to an AI avatar for speaking`;
 }
 
 function createUserPrompt(slides: any[], settings: any) {
@@ -71,11 +76,25 @@ function createUserPrompt(slides: any[], settings: any) {
 
 ${slideContent}
 
-Additional preferences:
-- Focus on key insights and takeaways
-- Include natural transitions between topics
-- Make it engaging for the target audience
-- Ensure the script flows naturally when spoken aloud
+IMPORTANT: Generate the script as pure spoken text with ONLY <CLICK> markers to indicate slide transitions.
 
-Please generate a complete presentation script that a presenter can follow.`;
+Example format:
+Welcome everyone to today's presentation. I'm excited to share our latest findings with you. Let's begin by looking at our market analysis.
+
+<CLICK>
+
+As you can see on this slide, our research shows significant growth opportunities. The data indicates a 25% increase in market demand.
+
+<CLICK>
+
+Moving to our next point, let's examine the competitive landscape...
+
+Remember:
+- Use ONLY <CLICK> markers for slide transitions
+- No other formatting, brackets, or special markers
+- Write as natural spoken language
+- Include smooth transitions between slides
+- The script will be split by <CLICK> and each segment will be spoken by an AI avatar
+
+Generate a complete presentation script following this exact format.`;
 }

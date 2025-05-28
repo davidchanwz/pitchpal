@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -59,6 +59,24 @@ export default function ScriptGenerator({
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, []);
+
+  // Helper function to clear progress interval
+  const clearProgressInterval = () => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+  };
 
   // Calculate estimated duration and word count
   useEffect(() => {
@@ -106,11 +124,28 @@ export default function ScriptGenerator({
     setError(null);
 
     try {
+      // Clear any existing interval
+      clearProgressInterval();
+
+      // Simulate progress during generation
+      progressIntervalRef.current = setInterval(() => {
+        setProgress(prev => {
+          if (prev < 99) {
+            return prev + Math.random() * 15; // Increment by 0-15% randomly
+          }
+          return 99; // Cap at 99% until completion
+        });
+      }, 500); // Update every 500ms
+
       // Use the service to generate script
       const result = await ScriptGenerationService.generateScript(slides, settings, slideId);
 
+      // Clear the progress interval
+      clearProgressInterval();
+
       if (result.error) {
         setError(result.error);
+        setProgress(0);
       } else {
         setGeneratedScript(result.script);
         onScriptGenerated?.(result.script);
@@ -120,6 +155,8 @@ export default function ScriptGenerator({
     } catch (error) {
       console.error('Script generation failed:', error);
       setError('Failed to generate script. Please try again.');
+      setProgress(0);
+      clearProgressInterval();
     } finally {
       setIsGenerating(false);
     }
@@ -139,18 +176,35 @@ export default function ScriptGenerator({
     setGeneratedScript('');
 
     try {
+      // Clear any existing interval
+      clearProgressInterval();
+
+      // Simulate initial progress for streaming
+      progressIntervalRef.current = setInterval(() => {
+        setProgress(prev => {
+          if (prev < 95) {
+            return prev + Math.random() * 10; // Increment by 0-10% randomly for streaming
+          }
+          return 95; // Cap at 95% until completion
+        });
+      }, 300); // Update every 300ms for streaming
+
       const result = await ScriptGenerationService.streamScript(
         slides,
         settings,
         (chunk: string) => {
           setGeneratedScript(prev => prev + chunk);
-          setProgress(prev => Math.min(prev + 5, 95)); // Gradually increase progress
+          // Don't update progress here as we're handling it with the interval
         },
         slideId
       );
 
+      // Clear the progress interval
+      clearProgressInterval();
+
       if (result.error) {
         setError(result.error);
+        setProgress(0);
       } else {
         onScriptGenerated?.(result.script);
         setProgress(100);
@@ -159,6 +213,8 @@ export default function ScriptGenerator({
     } catch (error) {
       console.error('Script streaming failed:', error);
       setError('Failed to generate script. Please try again.');
+      setProgress(0);
+      clearProgressInterval();
     } finally {
       setIsGenerating(false);
       setIsStreaming(false);
