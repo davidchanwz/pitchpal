@@ -8,6 +8,7 @@ function TemusAvatarCustomerPage() {
   const scenario = scenarios.find(s => s.id === 'temus-avatar-customer')!;
   
   return (
+    <div className="relative flex flex-col items-stretch justify-center h-screen w-full bg-gray-50">
     <Suspense fallback={<div>Loading...</div>}>
       <ScenarioContent
         title={scenario.title}
@@ -19,6 +20,7 @@ function TemusAvatarCustomerPage() {
         voice={scenario.voice}
       />
     </Suspense>
+    </div>
   );
 }
 

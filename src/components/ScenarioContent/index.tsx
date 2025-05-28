@@ -72,7 +72,7 @@ export default function ScenarioContent({
           <StartConversationButton onClick={() => setHasStarted(true)} />
         </div>
       ) : (
-        <div className="absolute inset-0 z-5 flex flex-col">
+        <div className=" inset-0 z-5 flex flex-col">
           <Conversation
             conversationId={conversationId}
             startMessage={startMessage}

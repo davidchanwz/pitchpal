@@ -62,6 +62,13 @@ function PixelStreamingVideo(props: PixelStreamingVideoProps) {
       videoElementParent: videoParent.current,
     })
 
+    console.log('PixelStreaming initialized', streaming);
+    setTimeout(() => {
+      if (videoParent.current) {
+        console.log('videoParent children after PixelStreaming init:', videoParent.current.children);
+      }
+    }, 1000);
+
     streaming.addEventListener('playStreamRejected', () => {
       setIsAutoplayRejected(true);
     })
@@ -77,13 +84,28 @@ function PixelStreamingVideo(props: PixelStreamingVideoProps) {
     }
   }, [videoParent, avatarId])
 
+  useEffect(() => {
+    // For now, always use scale 1 to ensure video is full size
+    setScale(1);
+  }, []);
+
   return (
     <div
-      className="w-full h-full relative overflow-hidden"
-      style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}
+      className="fixed inset-0 w-screen h-screen z-50 bg-black flex items-center justify-center"
+      style={{}}
     >
-      <div className="w-full h-full overflow-hidden" ref={videoParent} />
-      <div className="absolute overflow-hidden top-0 left-0 right-0 bottom-0" />
+      <style>{`
+        .pixel-streaming-video-parent video {
+          width: 100vw !important;
+          height: 100vh !important;
+          object-fit: cover;
+          display: block;
+        }
+      `}</style>
+      <div
+        className="w-full h-full overflow-hidden pixel-streaming-video-parent"
+        ref={videoParent}
+      />
     </div>
   )
 }
