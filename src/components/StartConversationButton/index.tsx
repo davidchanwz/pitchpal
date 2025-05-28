@@ -38,20 +38,21 @@ function StartConversationButton(props: StartConversationButtonProps) {
   }, []);
 
   return (
-    <div className="flex flex-column gap-3 align-items-center justify-content-center">
+    <div className="flex flex-col items-center justify-center gap-2 w-full">
       <Button
         rounded
         onClick={onClick}
         label="Start Scenario"
-        className="mt-3"
+        className="mb-2 w-full font-semibold text-base bg-blue-600 hover:bg-blue-700 text-white shadow-md transition"
+        style={{ borderRadius: '9999px', minHeight: 48, minWidth: 0 }}
         disabled={!isChatAvailable}
         size="large"
       />
-      <div className="flex gap-2 align-items-center">
-        <div className={clsx("border-circle", isCheckingStatus ? 'surface-300' : isChatAvailable ? 'bg-green-500' : 'bg-red-500')} style={{ width: 7, height: 7 }} />
-        <p className="m-0 text-color-secondary text-sm">
+      <div className="flex items-center gap-2 w-full justify-center">
+        <div className={clsx("border-circle", isCheckingStatus ? 'surface-300' : isChatAvailable ? 'bg-green-500' : 'bg-red-500')} style={{ width: 10, height: 10 }} />
+        <span className="text-sm font-medium text-gray-700">
           {isCheckingStatus ? 'Checking chat status...' : isChatAvailable ? 'Chat available' : 'Chat not available'}
-        </p>
+        </span>
       </div>
     </div>
   )

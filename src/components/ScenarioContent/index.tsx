@@ -67,8 +67,6 @@ export default function ScenarioContent({
       />
       {!hasStarted ? (
         <div className="w-full flex flex-col items-center justify-center gap-2 p-2">
-          <h1 className="text-lg font-semibold text-blue-700 text-center">{title}</h1>
-          <p className="text-sm text-gray-600 text-center">{description}</p>
           <StartConversationButton onClick={() => setHasStarted(true)} />
         </div>
       ) : (
