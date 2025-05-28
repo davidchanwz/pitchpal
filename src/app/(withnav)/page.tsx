@@ -23,6 +23,7 @@ import {
   Wand2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { scenarios } from "@/config/scenarios";
 
 // Mock data - replace with actual API calls
 const mockAvatars = [
@@ -69,6 +70,16 @@ const mockAvatars = [
     gender: "female" as const,
     accent: "American",
     specialty: "Academic & Research",
+  },
+  {
+    id: "michelle",
+    name: "Michelle",
+    description: "Dynamic and engaging presenter for marketing and sales pitches.",
+    imageUrl: "/avatars/michelle.png",
+    voicePreview: "sample-voice-5.mp3",
+    gender: "female" as const,
+    accent: "American",
+    specialty: "Marketing & Sales",
   },
 ];
 
@@ -164,9 +175,15 @@ function Dashboard() {
       setActiveTab("avatar");
       return;
     }
-
-    // Navigate to presentation page with selected avatar
-    router.push(`/presentation?avatar=${selectedAvatarId}`);
+    // Find the scenario for the selected avatar
+    const scenario = scenarios.find(
+      (s: any) => s.avatar === selectedAvatarId && s.href === '/presentation'
+    );
+    if (scenario) {
+      router.push(`/presentation?scenario=${scenario.id}`);
+    } else {
+      alert("No scenario found for this avatar.");
+    }
   };
 
   const handleAvatarSelect = (avatarId: string) => {

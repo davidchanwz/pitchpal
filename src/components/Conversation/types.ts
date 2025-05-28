@@ -75,5 +75,5 @@ export type AvatarWebsocketMessage = {
   type: "end_call";
 } | {
   type: "error";
-  error: string;
+  message: string;
 };

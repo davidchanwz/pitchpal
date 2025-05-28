@@ -125,36 +125,33 @@ function Conversation(props: ConversationProps) {
     }
     
     if (type === 'answer' && peerRef.current) {
-      peerRef.current.setRemoteDescription(new RTCSessionDescription(lastJsonMessage.answer))
-        .then(() => {
-          // Get the output audio track
-          peerRef.current?.getReceivers().forEach(receiver => {
-            if (receiver.track.kind === 'audio') {
-              setOutputAudioTrack(receiver.track);
-            }
+      try {
+        peerRef.current.setRemoteDescription(new RTCSessionDescription(lastJsonMessage.answer))
+          .then(() => {
+            // Get the output audio track
+            peerRef.current?.getReceivers().forEach(receiver => {
+              if (receiver.track.kind === 'audio') {
+                setOutputAudioTrack(receiver.track);
+              }
+            });
+          })
+          .catch((error) => {
+            console.error('Error setting remote description:', error);
           });
-        });
-    }
-
-    if (type === 'end_call') {
-      cleanupMedia();
-      onConversationEnd?.();
-    }
-
-    if (type === 'name') {
-      setAvatarName(lastJsonMessage.name);
+      } catch (error) {
+        console.error('Error creating or setting remote description:', error);
+      }
     }
 
     if (type === 'thinkingState') {
       setThinkingState?.(lastJsonMessage.thinking);
     }
 
-    // Display toast when unauthorized error occurs
-    if (type === 'error' && lastJsonMessage.error === 'unauthorized') {
+    // Display error toast
+    if (type === 'error') {
       toastRef.current?.show({
         severity: 'error',
-        summary: 'Unauthorized',
-        detail: 'You are not authorized to access this conversation, please make sure the API Key is correctly passed to the conversation websocket.',
+        summary: lastJsonMessage.message,
         life: 5000
       });
     }
@@ -173,6 +170,8 @@ function Conversation(props: ConversationProps) {
         apiKey: process.env.NEXT_PUBLIC_API_KEY || "",
         startMessage,
         prompt,
+        temperature: 0.0,
+        topP: 0.9,
         avatar,
         backgroundImageUrl,
         voice,
