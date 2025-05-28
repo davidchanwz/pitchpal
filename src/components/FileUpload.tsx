@@ -77,8 +77,11 @@ export default function FileUpload({
           message: "Upload successful",
         });
 
-        // Call the callback with file and result
-        onFileUpload?.(file, result.data);
+        // Only call the callback if this is internal upload (no external handler)
+        if (!onFileUpload) {
+          // This would be for standalone FileUpload usage
+          console.log("Upload completed internally:", result.data);
+        }
       } else {
         throw new Error(result.error || "Upload failed");
       }
@@ -102,9 +105,16 @@ export default function FileUpload({
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
       setInternalUploadedFile(file);
-      handleUpload(file);
+
+      // If external onFileUpload handler is provided, use it instead of internal upload
+      if (onFileUpload) {
+        onFileUpload(file);
+      } else {
+        // Only handle upload internally if no external handler is provided
+        handleUpload(file);
+      }
     }
-  }, []);
+  }, [onFileUpload]);
 
   const handleRemoveFile = () => {
     setInternalUploadedFile(null);

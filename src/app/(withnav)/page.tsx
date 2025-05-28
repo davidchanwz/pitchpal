@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FloatingNavbar from "@/components/FloatingNavbar";
 import FileUpload from "@/components/FileUpload";
-import ScriptPreview from "@/components/ScriptPreview";
 import AvatarSelection from "@/components/AvatarSelection";
 import SlideExtractor from "@/components/SlideExtractor";
 import ScriptGenerator from "@/components/ScriptGenerator";
@@ -24,6 +23,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { scenarios } from "@/config/scenarios";
+import { UploadService } from "@/services/UploadService";
 
 // Mock data - replace with actual API calls
 const mockAvatars = [
@@ -99,6 +99,7 @@ function Dashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("upload");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [slideId, setSlideId] = useState<string | null>(null);
   const [extractedSlides, setExtractedSlides] = useState<any[]>([]);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -106,6 +107,8 @@ function Dashboard() {
   const [generatedScript, setGeneratedScript] = useState("");
   const [isGeneratingScript, setIsGeneratingScript] = useState(false);
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>("");
+  const [showNextStepNotification, setShowNextStepNotification] = useState<string | null>(null);
+  const notificationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [recentPresentations] = useState([
     { id: 1, title: "Q4 Sales Review", date: "2 hours ago", duration: "8 min" },
     {
@@ -122,37 +125,108 @@ function Dashboard() {
     },
   ]);
 
-  // Simulate file processing
+  // Helper function to show notifications with proper timeout management
+  const showNotification = (message: string, duration = 5000) => {
+    // Clear any existing timeout
+    if (notificationTimeoutRef.current) {
+      clearTimeout(notificationTimeoutRef.current);
+    }
+    
+    setShowNextStepNotification(message);
+    
+    // Set new timeout
+    notificationTimeoutRef.current = setTimeout(() => {
+      setShowNextStepNotification(null);
+      notificationTimeoutRef.current = null;
+    }, duration);
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (notificationTimeoutRef.current) {
+        clearTimeout(notificationTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Verify database schema on component mount
+  useEffect(() => {
+    const verifySchema = async () => {
+      console.log('🔍 [Dashboard] Verifying database schema...');
+      try {
+        const result = await UploadService.verifyDatabaseSchema();
+        if (result.success) {
+          console.log('✅ [Dashboard] Database schema verification completed:', result.data);
+        } else {
+          console.error('❌ [Dashboard] Database schema verification failed:', result.error);
+        }
+      } catch (error) {
+        console.error('❌ [Dashboard] Schema verification error:', error);
+      }
+    };
+
+    verifySchema();
+  }, []);
+
+  // Handle file upload to Supabase
   const handleFileUpload = async (file: File) => {
+    console.log('📤 [Page.handleFileUpload] Starting file upload process...');
+    console.log('📤 [Page.handleFileUpload] File:', file.name, 'Size:', file.size);
+
     setUploadedFile(file);
     setIsProcessingFile(true);
     setUploadProgress(0);
     setUploadError(null);
+    setSlideId(null);
 
-    // Simulate processing with progress
-    const progressInterval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(progressInterval);
-          setIsProcessingFile(false);
-          // Auto advance to script generation
-          setTimeout(() => {
-            setActiveTab("script");
-            generateScript();
-          }, 500);
-          return 100;
-        }
-        return prev + Math.random() * 15;
-      });
-    }, 200);
+    try {
+      // Upload file to Supabase
+      setUploadProgress(30);
+      console.log('☁️ [Page.handleFileUpload] Calling UploadService.uploadSlide...');
+
+      const uploadResult = await UploadService.uploadSlide(file);
+
+      console.log('☁️ [Page.handleFileUpload] Upload result:', uploadResult);
+
+      if (!uploadResult.success || !uploadResult.data) {
+        throw new Error(uploadResult.error || 'Upload failed');
+      }
+
+      console.log('✅ [Page.handleFileUpload] File uploaded successfully');
+      console.log('✅ [Page.handleFileUpload] slideId:', uploadResult.data.slideId);
+      console.log('✅ [Page.handleFileUpload] path:', uploadResult.data.path);
+
+      setSlideId(uploadResult.data.slideId);
+      setUploadProgress(100);
+      setIsProcessingFile(false);
+
+      // File uploaded successfully - user can now extract slides
+      showNotification("✅ File uploaded successfully! Now extract your slides by clicking the 'Extract Slides' button below.");
+
+    } catch (error) {
+      console.error('❌ [Page.handleFileUpload] File upload error:', error);
+      setUploadError(error instanceof Error ? error.message : 'Upload failed');
+      setIsProcessingFile(false);
+      setUploadProgress(0);
+    }
   };
 
   const handleFileRemove = () => {
     setUploadedFile(null);
+    setSlideId(null);
     setIsProcessingFile(false);
     setUploadProgress(0);
     setUploadError(null);
     setGeneratedScript("");
+    setExtractedSlides([]);
+    setShowNextStepNotification(null);
+    
+    // Clear notification timeout
+    if (notificationTimeoutRef.current) {
+      clearTimeout(notificationTimeoutRef.current);
+      notificationTimeoutRef.current = null;
+    }
   };
 
   // Simulate script generation
@@ -188,6 +262,10 @@ function Dashboard() {
 
   const handleAvatarSelect = (avatarId: string) => {
     setSelectedAvatarId(avatarId);
+    if (avatarId) {
+      const selectedAvatar = mockAvatars.find(a => a.id === avatarId);
+      showNotification(`👤 ${selectedAvatar?.name} selected! You're ready to start your presentation.`, 4000);
+    }
   };
 
   return (
@@ -266,7 +344,31 @@ function Dashboard() {
       <div className="max-w-7xl mx-auto px-6 pb-12">
         <Tabs
           value={activeTab}
-          onValueChange={setActiveTab}
+          onValueChange={(newTab) => {
+            const oldTab = activeTab;
+            setActiveTab(newTab);
+            
+            // Clear context-specific notifications when switching tabs
+            if (showNextStepNotification) {
+              // Clear upload notifications when leaving upload tab
+              if (oldTab === "upload" && showNextStepNotification.includes("uploaded")) {
+                setShowNextStepNotification(null);
+                if (notificationTimeoutRef.current) {
+                  clearTimeout(notificationTimeoutRef.current);
+                  notificationTimeoutRef.current = null;
+                }
+              }
+              // Clear script notifications when leaving script tab
+              else if (oldTab === "script" && showNextStepNotification.includes("script")) {
+                setShowNextStepNotification(null);
+                if (notificationTimeoutRef.current) {
+                  clearTimeout(notificationTimeoutRef.current);
+                  notificationTimeoutRef.current = null;
+                }
+              }
+              // Keep avatar notifications visible across tabs since they're global success messages
+            }
+          }}
           className="space-y-6"
         >
           {/* Tab Navigation */}
@@ -282,20 +384,43 @@ function Dashboard() {
               >
                 <FileText className="h-4 w-4" />
                 <span>1. Upload</span>
+                {uploadedFile && (
+                  <div className="w-2 h-2 bg-green-500 rounded-full ml-1" />
+                )}
               </TabsTrigger>
               <TabsTrigger
                 value="script"
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-2 relative"
+                disabled={extractedSlides.length === 0}
+                title={extractedSlides.length === 0 ? "Extract slides first" : "Generate AI script"}
               >
                 <Wand2 className="h-4 w-4" />
                 <span>2. Script</span>
+                {generatedScript && (
+                  <div className="w-2 h-2 bg-green-500 rounded-full ml-1" />
+                )}
+                {extractedSlides.length === 0 && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-gray-400 rounded-full flex items-center justify-center">
+                    <span className="text-xs text-white">!</span>
+                  </div>
+                )}
               </TabsTrigger>
               <TabsTrigger
                 value="avatar"
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-2 relative"
+                disabled={!generatedScript}
+                title={!generatedScript ? "Generate script first" : "Select your AI avatar"}
               >
                 <Users className="h-4 w-4" />
                 <span>3. Avatar</span>
+                {selectedAvatarId && (
+                  <div className="w-2 h-2 bg-green-500 rounded-full ml-1" />
+                )}
+                {!generatedScript && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-gray-400 rounded-full flex items-center justify-center">
+                    <span className="text-xs text-white">!</span>
+                  </div>
+                )}
               </TabsTrigger>
               <TabsTrigger
                 value="analytics"
@@ -306,6 +431,76 @@ function Dashboard() {
               </TabsTrigger>
             </TabsList>
           </motion.div>
+
+          {/* Workflow Progress Indicator */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.4 }}
+            className="max-w-2xl mx-auto mb-6"
+          >
+            <div className="flex items-center justify-between text-sm text-gray-600">
+              <div className={`flex items-center space-x-2 ${uploadedFile ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-3 h-3 rounded-full ${uploadedFile ? 'bg-green-500' : 'bg-gray-300'}`} />
+                <span>File Uploaded</span>
+              </div>
+              <div className="flex-1 h-px bg-gray-200 mx-4" />
+              <div className={`flex items-center space-x-2 ${extractedSlides.length > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-3 h-3 rounded-full ${extractedSlides.length > 0 ? 'bg-green-500' : 'bg-gray-300'}`} />
+                <span>Slides Extracted</span>
+              </div>
+              <div className="flex-1 h-px bg-gray-200 mx-4" />
+              <div className={`flex items-center space-x-2 ${generatedScript ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-3 h-3 rounded-full ${generatedScript ? 'bg-green-500' : 'bg-gray-300'}`} />
+                <span>Script Generated</span>
+              </div>
+              <div className="flex-1 h-px bg-gray-200 mx-4" />
+              <div className={`flex items-center space-x-2 ${selectedAvatarId ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-3 h-3 rounded-full ${selectedAvatarId ? 'bg-green-500' : 'bg-gray-300'}`} />
+                <span>Avatar Selected</span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Progress Notification Banner */}
+          <AnimatePresence>
+            {showNextStepNotification && (
+              <motion.div
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg shadow-sm"
+              >
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <Sparkles className="h-5 w-5 text-blue-400" />
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <p className="text-sm text-blue-700">{showNextStepNotification}</p>
+                  </div>
+                  <div className="ml-auto pl-3">
+                    <div className="-mx-1.5 -my-1.5">
+                      <button
+                        onClick={() => {
+                          setShowNextStepNotification(null);
+                          // Clear the timeout when manually dismissed
+                          if (notificationTimeoutRef.current) {
+                            clearTimeout(notificationTimeoutRef.current);
+                            notificationTimeoutRef.current = null;
+                          }
+                        }}
+                        className="inline-flex rounded-md bg-blue-50 p-1.5 text-blue-500 hover:bg-blue-100 transition-colors"
+                      >
+                        <span className="sr-only">Dismiss</span>
+                        <span className="text-lg">×</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Tab Content */}
           <AnimatePresence mode="wait">
@@ -324,10 +519,36 @@ function Dashboard() {
                   {uploadedFile && (
                     <SlideExtractor
                       file={uploadedFile}
-                      onSlidesExtracted={(slides) => {
+                      onSlidesExtracted={async (slides) => {
+                        console.log('🎯 [Page.onSlidesExtracted] Received extracted slides');
+                        console.log('🎯 [Page.onSlidesExtracted] slideId:', slideId);
+                        console.log('🎯 [Page.onSlidesExtracted] slides count:', slides.length);
+                        console.log('🎯 [Page.onSlidesExtracted] slides preview:', slides.slice(0, 2));
+
                         setExtractedSlides(slides);
+
+                        // Save extracted slides to database if we have a slideId
+                        if (slideId && slides.length > 0) {
+                          console.log('🗄️ [Page.onSlidesExtracted] Attempting to save extracted slides to database...');
+                          try {
+                            const result = await UploadService.updateSlideWithExtractedContent(slideId, slides);
+                            if (result.success) {
+                              console.log('✅ [Page.onSlidesExtracted] Extracted slides saved to database successfully');
+                            } else {
+                              console.error('❌ [Page.onSlidesExtracted] Failed to save extracted slides:', result.error);
+                            }
+                          } catch (error) {
+                            console.error('❌ [Page.onSlidesExtracted] Unexpected error saving extracted slides:', error);
+                          }
+                        } else {
+                          console.warn('⚠️ [Page.onSlidesExtracted] Skipping save - missing slideId or no slides');
+                          console.log('⚠️ [Page.onSlidesExtracted] slideId:', slideId);
+                          console.log('⚠️ [Page.onSlidesExtracted] slides count:', slides.length);
+                        }
+
+                        // Slides extracted successfully - user can now proceed to script generation
                         if (slides.length > 0) {
-                          setActiveTab("script");
+                          showNotification(`🎯 Successfully extracted ${slides.length} slides! Click the 'Script' tab to generate your AI script.`, 6000);
                         }
                       }}
                     />
@@ -373,36 +594,69 @@ function Dashboard() {
             </TabsContent>
 
             <TabsContent value="script" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
                   <ScriptGenerator
                     slides={extractedSlides}
+                    slideId={slideId || undefined}
                     onScriptGenerated={(script) => {
+                      console.log('🤖 [Page.onScriptGenerated] Script generation completed');
+                      console.log('🤖 [Page.onScriptGenerated] script length:', script.length);
+                      console.log('🤖 [Page.onScriptGenerated] script preview:', script.substring(0, 100) + '...');
+
                       setGeneratedScript(script);
+                      // Script generated successfully - user can now proceed to avatar selection or edit the script
                       if (script) {
-                        setActiveTab("avatar");
+                        showNotification("🤖 AI script generated successfully! You can edit it above or click the 'Avatar' tab to select your presenter.", 6000);
                       }
                     }}
                   />
                 </div>
 
+                {/* Action Panel */}
                 <div className="space-y-6">
-                  <ScriptPreview
-                    script={generatedScript}
-                    onScriptUpdate={handleScriptUpdate}
-                    onStartPresentation={handleStartPresentation}
-                    isGenerating={isGeneratingScript}
-                    slideCount={extractedSlides.length || 0}
-                    estimatedDuration={`${Math.ceil(
-                      (generatedScript.split(" ").length || 0) / 150
-                    )} min${
-                      Math.ceil(
-                        (generatedScript.split(" ").length || 0) / 150
-                      ) !== 1
-                        ? "s"
-                        : ""
-                    }`}
-                  />
+                  {generatedScript && (
+                    <motion.div
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.5, delay: 0.2 }}
+                    >
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg flex items-center space-x-2">
+                            <Wand2 className="h-5 w-5 text-purple-600" />
+                            <span>Next Steps</span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="space-y-3">
+                            <p className="text-sm text-gray-600">
+                              Your AI script is ready! You can continue editing it or proceed to select an avatar presenter.
+                            </p>
+                            
+                            <Button 
+                              onClick={handleStartPresentation}
+                              className="w-full"
+                              size="lg"
+                            >
+                              <Users className="h-5 w-5 mr-2" />
+                              Choose Avatar & Start
+                            </Button>
+                            
+                            <div className="text-center">
+                              <Button
+                                variant="outline"
+                                onClick={() => setActiveTab("avatar")}
+                                className="w-full"
+                              >
+                                Go to Avatar Selection
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  )}
                 </div>
               </div>
 

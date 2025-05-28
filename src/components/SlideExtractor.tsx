@@ -6,15 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { 
-  FileText, 
-  Image, 
-  Download, 
-  Eye, 
+import {
+  FileText,
+  Image,
+  Download,
+  Eye,
   Check,
   AlertCircle,
   Loader2
 } from 'lucide-react';
+import JSZip from 'jszip';
+import { PptxParsingService, type ParsedSlide } from '@/services/PptxParsingService';
 
 interface ExtractedSlide {
   id: number;
@@ -32,82 +34,73 @@ interface SlideExtractorProps {
   className?: string;
 }
 
-export default function SlideExtractor({ 
-  file, 
+export default function SlideExtractor({
+  file,
   onSlidesExtracted,
-  className = "" 
+  className = ""
 }: SlideExtractorProps) {
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedSlides, setExtractedSlides] = useState<ExtractedSlide[]>([]);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  // Simulate slide extraction process
+  // Extract slides from PPTX file
   const extractSlides = async () => {
     if (!file) return;
+
+    // Validate file type
+    if (!PptxParsingService.isValidPptxFile(file)) {
+      setError("Please upload a valid PowerPoint (.pptx or .ppt) file.");
+      return;
+    }
 
     setIsExtracting(true);
     setError(null);
     setProgress(0);
 
     try {
-      // Simulate processing steps
+      // Simulate processing steps with real progress
       const steps = [
         "Reading PPTX file...",
         "Extracting slide structure...",
         "Processing text content...",
-        "Generating thumbnails...",
         "Extracting speaker notes...",
         "Finalizing extraction..."
       ];
 
-      for (let i = 0; i < steps.length; i++) {
-        await new Promise(resolve => setTimeout(resolve, 800));
-        setProgress(((i + 1) / steps.length) * 100);
-      }
+      // Step 1: Reading file
+      setProgress(20);
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Mock extracted slides based on file
-      const mockSlides: ExtractedSlide[] = Array.from({ length: 12 }, (_, index) => ({
-        id: index + 1,
-        title: [
-          "Introduction & Welcome",
-          "Market Analysis Overview", 
-          "Problem Statement",
-          "Our Solution",
-          "Technology Architecture",
-          "Implementation Strategy",
-          "Case Studies",
-          "ROI Projections",
-          "Timeline & Milestones",
-          "Team & Expertise",
-          "Next Steps",
-          "Thank You & Q&A"
-        ][index] || `Slide ${index + 1}`,
-        content: [
-          "Welcome to our comprehensive presentation covering market opportunities and innovative solutions.",
-          "Current market shows 25% growth potential with emerging opportunities in AI and automation sectors.",
-          "Businesses struggle with manual processes, inefficient workflows, and lack of real-time insights.",
-          "Our AI-powered platform streamlines operations, reduces costs by 40%, and improves productivity.",
-          "Built on cloud-native architecture with microservices, AI/ML integration, and real-time analytics.",
-          "Phased rollout approach ensuring minimal disruption while maximizing adoption and value creation.",
-          "Success stories from Fortune 500 companies showing average 300% ROI within first year.",
-          "Conservative projections show break-even at 8 months with 250% ROI by end of year one.",
-          "12-month implementation timeline with key milestones and deliverables clearly defined.",
-          "Experienced team of 50+ engineers, data scientists, and business strategists driving success.",
-          "Ready to begin with pilot program, full deployment, and ongoing support partnerships.",
-          "Questions and discussion about implementation, pricing, and partnership opportunities."
-        ][index] || `Content for slide ${index + 1}`,
-        notes: `Speaker notes for slide ${index + 1}. This provides additional context and talking points for the presenter.`,
-        thumbnail: `/api/placeholder/200/150?text=Slide${index + 1}`,
-        extractedText: `Extracted text content from slide ${index + 1} including all text elements, bullet points, and captions.`,
-        images: index % 3 === 0 ? [`/api/placeholder/400/300?text=Chart${index + 1}`] : []
+      // Step 2-5: Parse the actual PPTX file
+      setProgress(40);
+      const parsedSlides = await PptxParsingService.parsePptxFile(file);
+
+      setProgress(70);
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Convert ParsedSlide to ExtractedSlide format
+      const extractedSlides: ExtractedSlide[] = parsedSlides.map(slide => ({
+        id: slide.id,
+        title: slide.title,
+        content: slide.content,
+        notes: slide.notes,
+        thumbnail: slide.thumbnail,
+        extractedText: slide.extractedText,
+        images: slide.images
       }));
 
-      setExtractedSlides(mockSlides);
-      onSlidesExtracted?.(mockSlides);
+      setProgress(100);
+      setExtractedSlides(extractedSlides);
+      onSlidesExtracted?.(extractedSlides);
 
     } catch (err) {
-      setError("Failed to extract slides from PPTX file. Please try again.");
+      console.error('Slide extraction error:', err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to extract slides from PPTX file. Please ensure it's a valid PowerPoint presentation."
+      );
     } finally {
       setIsExtracting(false);
     }
@@ -137,7 +130,7 @@ export default function SlideExtractor({
             <span>Slide Extraction</span>
           </CardTitle>
         </CardHeader>
-        
+
         <CardContent className="space-y-6">
           {file && (
             <div className="space-y-4">
@@ -154,7 +147,7 @@ export default function SlideExtractor({
                     </p>
                   </div>
                 </div>
-                
+
                 {!isExtracting && extractedSlides.length === 0 && (
                   <Button onClick={extractSlides}>
                     Extract Slides
@@ -176,7 +169,12 @@ export default function SlideExtractor({
                   <Progress value={progress} className="h-2" />
                   <div className="flex items-center space-x-2 text-sm text-gray-600">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Processing slide content and generating thumbnails</span>
+                    <span>
+                      {progress < 20 && "Reading PowerPoint file..."}
+                      {progress >= 20 && progress < 40 && "Parsing slide structure..."}
+                      {progress >= 40 && progress < 70 && "Extracting text and notes..."}
+                      {progress >= 70 && "Finalizing extraction..."}
+                    </span>
                   </div>
                 </motion.div>
               )}
@@ -193,9 +191,9 @@ export default function SlideExtractor({
                     <span className="text-red-800 font-medium">Error</span>
                   </div>
                   <p className="text-red-700 mt-1">{error}</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={extractSlides}
                     className="mt-2"
                   >
@@ -244,7 +242,7 @@ export default function SlideExtractor({
                     </div>
                     <div className="text-center p-3 bg-orange-50 rounded-lg">
                       <div className="text-2xl font-bold text-orange-600">
-                        {Math.round(extractedSlides.reduce((acc, slide) => 
+                        {Math.round(extractedSlides.reduce((acc, slide) =>
                           acc + (slide.content?.length || 0), 0) / extractedSlides.length)}
                       </div>
                       <div className="text-sm text-orange-800">Avg Words</div>

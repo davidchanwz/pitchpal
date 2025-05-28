@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Wand2, 
-  RefreshCw, 
-  Download, 
-  Copy, 
+import {
+  Wand2,
+  RefreshCw,
+  Download,
+  Copy,
   Check,
   Settings,
   Clock,
@@ -20,9 +20,11 @@ import {
   Loader2,
   AlertTriangle
 } from 'lucide-react';
+import { ScriptGenerationService, type ScriptGenerationSettings } from '@/services/ScriptGenerationService';
 
 interface ScriptGeneratorProps {
   slides?: any[];
+  slideId?: string;
   onScriptGenerated?: (script: string) => void;
   className?: string;
 }
@@ -34,146 +36,133 @@ interface GenerationSettings {
   targetAudience: 'general' | 'technical' | 'executive' | 'sales';
 }
 
-const defaultSettings: GenerationSettings = {
+const defaultSettings: ScriptGenerationSettings = {
   tone: 'professional',
   length: 'detailed',
   focusAreas: ['key_points', 'transitions', 'engagement'],
   targetAudience: 'general'
 };
 
-export default function ScriptGenerator({ 
-  slides = [], 
+export default function ScriptGenerator({
+  slides = [],
+  slideId,
   onScriptGenerated,
-  className = "" 
+  className = ""
 }: ScriptGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedScript, setGeneratedScript] = useState('');
   const [progress, setProgress] = useState(0);
-  const [settings, setSettings] = useState<GenerationSettings>(defaultSettings);
+  const [settings, setSettings] = useState<ScriptGenerationSettings>(defaultSettings);
   const [showSettings, setShowSettings] = useState(false);
   const [estimatedDuration, setEstimatedDuration] = useState('');
   const [wordCount, setWordCount] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isStreaming, setIsStreaming] = useState(false);
 
   // Calculate estimated duration and word count
   useEffect(() => {
     if (generatedScript) {
-      const words = generatedScript.split(/\s+/).filter(word => word.length > 0).length;
+      const words = ScriptGenerationService.getWordCount(generatedScript);
       setWordCount(words);
-      
-      // Estimate speaking time (average 150 words per minute)
-      const minutes = Math.ceil(words / 150);
-      setEstimatedDuration(`${minutes} min${minutes !== 1 ? 's' : ''}`);
+
+      const duration = ScriptGenerationService.estimateDuration(generatedScript);
+      setEstimatedDuration(duration);
     }
   }, [generatedScript]);
 
-  // Simulate AI script generation
+  // Load previously saved script when slideId changes
+  useEffect(() => {
+    const loadSavedScript = async () => {
+      if (slideId) {
+        try {
+          const result = await ScriptGenerationService.getSavedScript(slideId);
+          if (result.script) {
+            setGeneratedScript(result.script);
+            onScriptGenerated?.(result.script);
+          } else if (result.error) {
+            console.error('Failed to load saved script:', result.error);
+          }
+        } catch (error) {
+          console.error('Failed to load saved script:', error);
+          // Don't show error to user as this is background loading
+        }
+      }
+    };
+
+    loadSavedScript();
+  }, [slideId, onScriptGenerated]);
+
+  // Generate script using OpenAI API
   const generateScript = async () => {
+    if (slides.length === 0) {
+      setError('Please upload and extract slides first to generate a tailored script.');
+      return;
+    }
+
     setIsGenerating(true);
+    setIsStreaming(false);
     setProgress(0);
+    setError(null);
 
     try {
-      // Simulate generation steps
-      const steps = [
-        "Analyzing slide content...",
-        "Understanding presentation flow...",
-        "Generating narrative structure...",
-        "Creating smooth transitions...",
-        "Adding engagement elements...",
-        "Finalizing script..."
-      ];
+      // Use the service to generate script
+      const result = await ScriptGenerationService.generateScript(slides, settings, slideId);
 
-      for (let i = 0; i < steps.length; i++) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setProgress(((i + 1) / steps.length) * 100);
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setGeneratedScript(result.script);
+        onScriptGenerated?.(result.script);
+        setProgress(100);
       }
-
-      // Generate script based on slides and settings
-      const script = generateScriptContent();
-      setGeneratedScript(script);
-      onScriptGenerated?.(script);
 
     } catch (error) {
       console.error('Script generation failed:', error);
+      setError('Failed to generate script. Please try again.');
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const generateScriptContent = () => {
-    const { tone, length, targetAudience } = settings;
-    
-    // Base script template that adapts based on settings
-    let script = "";
-
-    // Introduction
-    if (tone === 'enthusiastic') {
-      script += "Hello everyone, and welcome to what I believe will be an exciting and transformative presentation! ";
-    } else if (tone === 'casual') {
-      script += "Hi there! Thanks for joining me today. I'm excited to share some insights with you. ";
-    } else if (tone === 'academic') {
-      script += "Good day. Today we will examine and analyze the key findings and methodologies presented in this research. ";
-    } else {
-      script += "Good morning, and thank you for your time today. I'm pleased to present our findings and recommendations. ";
+  // Generate script with streaming for real-time updates
+  const generateScriptWithStreaming = async () => {
+    if (slides.length === 0) {
+      setError('Please upload and extract slides first to generate a tailored script.');
+      return;
     }
 
-    // Main content based on slides
-    if (slides.length > 0) {
-      slides.forEach((slide, index) => {
-        if (length === 'comprehensive') {
-          script += `\n\nLet's move to slide ${index + 1}, where we explore ${slide.title}. ${slide.content} `;
-          
-          if (targetAudience === 'technical') {
-            script += "From a technical perspective, this involves several key components and considerations that are crucial for implementation. ";
-          } else if (targetAudience === 'executive') {
-            script += "The business impact of this cannot be overstated, with direct implications for our strategic objectives. ";
-          } else if (targetAudience === 'sales') {
-            script += "This represents a significant opportunity for our clients to achieve measurable results and competitive advantage. ";
-          } else {
-            script += "This is important because it directly affects how we approach our goals and measure success. ";
-          }
-          
-        } else if (length === 'detailed') {
-          script += `\n\nOn slide ${index + 1}, we see ${slide.title}. ${slide.content} `;
-          script += "This is a crucial point that ties into our overall strategy and objectives. ";
-        } else {
-          script += `\n\n${slide.title}: ${slide.content.substring(0, 100)}... `;
-        }
+    setIsGenerating(true);
+    setIsStreaming(true);
+    setProgress(0);
+    setError(null);
+    setGeneratedScript('');
 
-        // Add transitions
-        if (index < slides.length - 1) {
-          if (tone === 'enthusiastic') {
-            script += "Now, this leads us beautifully to our next exciting point! ";
-          } else if (tone === 'casual') {
-            script += "So, moving on to what's next... ";
-          } else {
-            script += "This brings us to our next consideration. ";
-          }
-        }
-      });
-    } else {
-      // Default content when no slides provided
-      script += `\n\nIn today's presentation, we'll cover three main areas that are critical to our success.
+    try {
+      const result = await ScriptGenerationService.streamScript(
+        slides,
+        settings,
+        (chunk: string) => {
+          setGeneratedScript(prev => prev + chunk);
+          setProgress(prev => Math.min(prev + 5, 95)); // Gradually increase progress
+        },
+        slideId
+      );
 
-First, we'll examine the current landscape and identify key opportunities for growth and innovation. Our analysis shows significant potential in emerging markets and technologies.
+      if (result.error) {
+        setError(result.error);
+      } else {
+        onScriptGenerated?.(result.script);
+        setProgress(100);
+      }
 
-Second, we'll dive deep into our proposed solution and how it addresses the challenges we've identified. This approach leverages cutting-edge methodologies to deliver measurable results.
-
-Finally, we'll discuss implementation strategies and expected outcomes, including timelines, resource requirements, and success metrics.`;
+    } catch (error) {
+      console.error('Script streaming failed:', error);
+      setError('Failed to generate script. Please try again.');
+    } finally {
+      setIsGenerating(false);
+      setIsStreaming(false);
     }
-
-    // Conclusion
-    if (tone === 'enthusiastic') {
-      script += "\n\nI'm genuinely excited about these opportunities and what they mean for our future! Thank you for your attention, and I look forward to our discussion.";
-    } else if (tone === 'casual') {
-      script += "\n\nSo that's a wrap! I hope this has been helpful. Happy to answer any questions you might have.";
-    } else if (tone === 'academic') {
-      script += "\n\nIn conclusion, the evidence presented supports our hypothesis and methodology. I welcome questions and further discussion on these findings.";
-    } else {
-      script += "\n\nTo summarize, we've outlined a clear path forward with defined objectives and measurable outcomes. I welcome your questions and feedback.";
-    }
-
-    return script;
   };
 
   const copyToClipboard = async () => {
@@ -238,7 +227,7 @@ Finally, we'll discuss implementation strategies and expected outcomes, includin
                 className="space-y-4 p-4 bg-gray-50 rounded-lg"
               >
                 <h4 className="font-medium text-gray-900">Generation Settings</h4>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-gray-700 block mb-2">
@@ -246,9 +235,9 @@ Finally, we'll discuss implementation strategies and expected outcomes, includin
                     </label>
                     <select
                       value={settings.tone}
-                      onChange={(e) => setSettings(prev => ({ 
-                        ...prev, 
-                        tone: e.target.value as GenerationSettings['tone'] 
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        tone: e.target.value as ScriptGenerationSettings['tone']
                       }))}
                       className="w-full p-2 border rounded-md"
                     >
@@ -265,9 +254,9 @@ Finally, we'll discuss implementation strategies and expected outcomes, includin
                     </label>
                     <select
                       value={settings.length}
-                      onChange={(e) => setSettings(prev => ({ 
-                        ...prev, 
-                        length: e.target.value as GenerationSettings['length'] 
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        length: e.target.value as ScriptGenerationSettings['length']
                       }))}
                       className="w-full p-2 border rounded-md"
                     >
@@ -283,9 +272,9 @@ Finally, we'll discuss implementation strategies and expected outcomes, includin
                     </label>
                     <select
                       value={settings.targetAudience}
-                      onChange={(e) => setSettings(prev => ({ 
-                        ...prev, 
-                        targetAudience: e.target.value as GenerationSettings['targetAudience'] 
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        targetAudience: e.target.value as ScriptGenerationSettings['targetAudience']
                       }))}
                       className="w-full p-2 border rounded-md"
                     >
@@ -313,6 +302,37 @@ Finally, we'll discuss implementation strategies and expected outcomes, includin
                 The AI will create a narrative that flows through all your slides with smooth transitions.
               </p>
             </div>
+          )}
+
+          {/* Error Display */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="p-4 bg-red-50 border border-red-200 rounded-lg"
+            >
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <span className="text-red-800 font-medium">Error</span>
+              </div>
+              <p className="text-red-700 mt-1">{error}</p>
+              <div className="flex space-x-2 mt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={generateScript}
+                >
+                  Try Again
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={generateScriptWithStreaming}
+                >
+                  Try Streaming
+                </Button>
+              </div>
+            </motion.div>
           )}
 
           {slides.length === 0 && (
@@ -439,8 +459,8 @@ Finally, we'll discuss implementation strategies and expected outcomes, includin
                 Click "Generate Script" to create an AI-powered presentation script
               </p>
               <p className="text-sm text-gray-400">
-                {slides.length > 0 
-                  ? `Based on your ${slides.length} slides` 
+                {slides.length > 0
+                  ? `Based on your ${slides.length} slides`
                   : 'Generic template will be used'
                 }
               </p>
