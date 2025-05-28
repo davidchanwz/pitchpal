@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import { UploadService } from '@/services/UploadService';
 
 export default function UploadPptx() {
   const [file, setFile] = useState<File | null>(null);
@@ -16,18 +18,29 @@ export default function UploadPptx() {
     if (!file) return;
     setLoading(true);
     setResult(null);
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('user_id', uuidv4()); // Simulating user_id, replace with actual user ID logic
+
     try {
-      const res = await fetch('/api/supabase', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      setResult(JSON.stringify(data, null, 2));
+      const uploadResult = await UploadService.uploadSlide(file);
+
+      if (uploadResult.success) {
+        setResult(
+          JSON.stringify(
+            {
+              message: 'Upload successful',
+              slideId: uploadResult.data?.slideId,
+              path: uploadResult.data?.path,
+            },
+            null,
+            2
+          )
+        );
+      } else {
+        setResult(`Upload failed: ${uploadResult.error}`);
+      }
     } catch (err) {
-      setResult('Upload failed');
+      setResult(
+        'Upload failed: ' + (err instanceof Error ? err.message : 'Unknown error')
+      );
     } finally {
       setLoading(false);
     }
