@@ -250,14 +250,20 @@ function Dashboard() {
       return;
     }
     // Find the scenario for the selected avatar
-    const scenario = scenarios.find(
-      (s: any) => s.avatar === selectedAvatarId && s.href === '/presentation'
-    );
-    if (scenario) {
-      router.push(`/presentation?scenario=${scenario.id}`);
-    } else {
-      alert("No scenario found for this avatar.");
+    // const scenario = scenarios.find(
+    //   (s: any) => s.avatar === selectedAvatarId && s.href === '/presentation'
+    // );
+    if (!slideId) {
+      alert("Please upload a file and extract slides first.");
+      return;
     }
+    router.push(`/presentation?slideId=${slideId}&avatarId=${selectedAvatarId}`);
+
+    // if (scenario) {
+    //   router.push(`/presentation?scenario=${scenario.id}`);
+    // } else {
+    //   alert("No scenario found for this avatar.");
+    // }
   };
 
   const handleAvatarSelect = (avatarId: string) => {

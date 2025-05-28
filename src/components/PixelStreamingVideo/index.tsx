@@ -1,6 +1,9 @@
 // Code reference: https://github.com/tplusplusdevhub/temus-dialogforge-avatar/blob/8c0a224f4135fb614ad2d0feeb0fe0888cc3bfa9/ue/PixelStreaming/WebServers/Frontend/implementations/react/src/components/PixelStreamingWrapper.tsx
 import { useEffect, useRef, useState } from "react";
-import { Config, PixelStreaming } from "@epicgames-ps/lib-pixelstreamingfrontend-ue5.3";
+import {
+  Config,
+  PixelStreaming,
+} from "@epicgames-ps/lib-pixelstreamingfrontend-ue5.3";
 import { PixelStreamingVideoProps } from "./types";
 
 function PixelStreamingVideo(props: PixelStreamingVideoProps) {
@@ -26,22 +29,22 @@ function PixelStreamingVideo(props: PixelStreamingVideoProps) {
     };
 
     handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize); 
-  }, [])
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     if (!isAutoplayRejected || !pixelStreaming) {
-      return
+      return;
     }
 
     pixelStreaming.play();
     setIsAutoplayRejected(false);
-  }, [isAutoplayRejected, pixelStreaming])
+  }, [isAutoplayRejected, pixelStreaming]);
 
   useEffect(() => {
     if (!videoParent.current || !avatarId) {
-      return
+      return;
     }
 
     const config = new Config({
@@ -56,33 +59,36 @@ function PixelStreamingVideo(props: PixelStreamingVideoProps) {
         AutoConnect: true,
         SuppressBrowserKeys: true,
       },
-    })
+    });
 
     const streaming = new PixelStreaming(config, {
       videoElementParent: videoParent.current,
-    })
+    });
 
-    console.log('PixelStreaming initialized', streaming);
+    console.log("PixelStreaming initialized", streaming);
     setTimeout(() => {
       if (videoParent.current) {
-        console.log('videoParent children after PixelStreaming init:', videoParent.current.children);
+        console.log(
+          "videoParent children after PixelStreaming init:",
+          videoParent.current.children
+        );
       }
     }, 1000);
 
-    streaming.addEventListener('playStreamRejected', () => {
+    streaming.addEventListener("playStreamRejected", () => {
       setIsAutoplayRejected(true);
-    })
+    });
 
     setPixelStreaming(streaming);
 
     return () => {
       try {
-        streaming.disconnect()
+        streaming.disconnect();
       } catch (e) {
-        console.error('failed to disconnect pixel streaming', e)
+        console.error("failed to disconnect pixel streaming", e);
       }
-    }
-  }, [videoParent, avatarId])
+    };
+  }, [videoParent, avatarId]);
 
   useEffect(() => {
     // For now, always use scale 1 to ensure video is full size
@@ -91,13 +97,13 @@ function PixelStreamingVideo(props: PixelStreamingVideoProps) {
 
   return (
     <div
-      className="fixed inset-0 w-screen h-screen z-50 bg-black flex items-center justify-center"
+      className="fixed bottom-4 right-4 w-1/4 h-1/4 z-50 bg-black flex items-center justify-center"
       style={{}}
     >
       <style>{`
         .pixel-streaming-video-parent video {
-          width: 100vw !important;
-          height: 100vh !important;
+          width: 100% !important;
+          height: 100% !important;
           object-fit: cover;
           display: block;
         }
@@ -107,7 +113,7 @@ function PixelStreamingVideo(props: PixelStreamingVideoProps) {
         ref={videoParent}
       />
     </div>
-  )
+  );
 }
 
-export default PixelStreamingVideo
+export default PixelStreamingVideo;

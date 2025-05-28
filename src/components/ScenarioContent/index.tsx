@@ -1,10 +1,10 @@
-import { useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import Conversation from "@/components/Conversation";
 import VideoChatControls from "@/components/VideoChatControls";
 import StartConversationButton from "@/components/StartConversationButton";
 import ThinkingState from "@/components/ThinkingState";
-import { Button } from 'primereact/button';
+import { Button } from "primereact/button";
 
 interface ScenarioContentProps {
   title: string;
@@ -17,7 +17,9 @@ interface ScenarioContentProps {
 }
 
 const generateShortId = () => {
-  const randomNum = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+  const randomNum = Math.floor(Math.random() * 1000000)
+    .toString()
+    .padStart(6, "0");
   return `${randomNum}`;
 };
 
@@ -50,7 +52,7 @@ export default function ScenarioContent({
       audioTrackRef.current.stop();
       audioTrackRef.current = null;
     }
-    router.push('/');
+    router.push("/");
   };
 
   return (
@@ -70,7 +72,7 @@ export default function ScenarioContent({
           <StartConversationButton onClick={() => setHasStarted(true)} />
         </div>
       ) : (
-        <div className=" inset-0 z-5 flex flex-col">
+        <div className="w-1/2 inset-0 z-5 flex flex-col">
           <Conversation
             conversationId={conversationId}
             startMessage={startMessage}

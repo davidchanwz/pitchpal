@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
         const userPrompt = createUserPrompt(slides, settings);
 
         const stream = await openai.chat.completions.create({
-            model: 'gpt-4',
+            model: 'gpt-4o-mini',//'gpt-4',
             messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userPrompt }

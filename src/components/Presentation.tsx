@@ -3,13 +3,12 @@ import DocViewer, { DocViewerRenderers } from "react-doc-viewer";
 
 interface PresentationProps {
     presentationLink: string;
-    avatar?: string;
 }
 
-export default function Presentation({ presentationLink, avatar }: PresentationProps) {
+export default function Presentation({ presentationLink }: PresentationProps) {
   const docs = [
     {
-      uri: "https://pitchpal.deploy.jensenhshoots.com/slides/sample.pptx",
+      uri: presentationLink,
       type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     },
   ];
