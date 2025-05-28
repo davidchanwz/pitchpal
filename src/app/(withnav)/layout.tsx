@@ -26,14 +26,16 @@ export default async function Layout({
   children: React.ReactNode;
 }) {
   const supabase = createServerComponentClient({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user }, error } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user || error) {
     redirect('/auth');
-  }  return (
+  }
+
+  return (
     <html lang="en">
       <body className={`${inter.className} min-h-screen bg-background antialiased`}>
-        <FloatingNavbar userName={session?.user?.email || "Guest"} />
+        <FloatingNavbar userName={user.email || "Guest"} />
         <main className="min-h-screen">
           {children}
         </main>

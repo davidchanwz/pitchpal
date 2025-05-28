@@ -34,6 +34,10 @@ export default function FloatingNavbar({
   const router = useRouter();
   const supabase = createClientComponentClient();
 
+  const handleLogoClick = () => {
+    router.push('/');
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push('/auth');
@@ -56,9 +60,11 @@ export default function FloatingNavbar({
       >
         <div className="flex items-center space-x-6">
           {/* Logo */}
-          <motion.div 
-            className="flex items-center space-x-2"
-            whileHover={{ scale: 1.05 }}
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+          <Button
+            variant="ghost"
+            onClick={handleLogoClick}
+            className="hover:bg-transparent hover:opacity-100 p-0"
           >
             <div className="flex items-center space-x-1">
               <Sparkles className="h-6 w-6 text-blue-600" />
@@ -67,10 +73,11 @@ export default function FloatingNavbar({
               </span>
             </div>
             {isProcessing && (
-              <Badge variant="secondary" className="animate-pulse">
+              <Badge variant="secondary" className="animate-pulse ml-2">
                 Processing
               </Badge>
             )}
+          </Button>
           </motion.div>
 
           {/* Navigation Items */}
